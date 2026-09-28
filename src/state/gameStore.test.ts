@@ -115,6 +115,28 @@ describe("game store", () => {
       inventory: store.getState().inventory,
       adventures: store.getState().adventures,
       settings: store.getState().settings,
+      tutorial: store.getState().tutorial,
     }).toEqual(expectedInitialState);
+  });
+
+  it("persists tutorial progress and unlocks only the Forest hook on completion", async () => {
+    const repository = new MemoryRepository();
+    const store = await createGameStore(repository);
+
+    for (let index = 0; index < 7; index += 1) {
+      store.getState().advanceTutorial();
+    }
+    await flushPromises();
+
+    expect(store.getState().tutorial).toEqual({
+      multiplicationIntroStep: "COMPLETED",
+      multiplicationIntroCompleted: true,
+    });
+    expect(store.getState().world.unlockedLocations).toEqual(["FOREST"]);
+    expect(repository.saved?.tutorial).toEqual(store.getState().tutorial);
+
+    const resumed = await createGameStore(repository);
+    expect(resumed.getState().tutorial.multiplicationIntroCompleted).toBe(true);
+    expect(resumed.getState().tutorial.multiplicationIntroStep).toBe("COMPLETED");
   });
 });

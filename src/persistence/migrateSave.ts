@@ -11,6 +11,10 @@ import type {
   LearningSkill,
   MathOperation,
 } from "../learning/domain/math";
+import {
+  createInitialTutorialProgress,
+  multiplicationTutorialSteps,
+} from "../tutorial/domain/tutorialProgress";
 
 const operations: MathOperation[] = ["MULTIPLICATION", "DIVISION"];
 const stages: WorldStage[] = ["CAMP", "SETTLEMENT", "VILLAGE", "CASTLE", "KINGDOM"];
@@ -63,10 +67,9 @@ function isFactMastery(value: unknown): value is FactMastery {
   );
 }
 
-export function isGameState(value: unknown): value is GameState {
-  if (!isRecord(value) || value.version !== SAVE_VERSION) return false;
+function hasValidCoreState(value: Record<string, unknown>): boolean {
   const { player, world, learning, inventory, adventures, settings } = value;
-  if (
+  return !(
     !isRecord(player) ||
     (player.name !== undefined && typeof player.name !== "string") ||
     !isRecord(world) ||
@@ -85,13 +88,37 @@ export function isGameState(value: unknown): value is GameState {
     !isStringArray(adventures.completedAdventureIds) ||
     !isRecord(settings) ||
     settings.locale !== "vi"
-  ) {
-    return false;
-  }
-  return true;
+  );
+}
+
+export function isGameState(value: unknown): value is GameState {
+  if (
+    !isRecord(value) ||
+    value.version !== SAVE_VERSION ||
+    !hasValidCoreState(value) ||
+    !isRecord(value.tutorial)
+  ) return false;
+
+  const step = value.tutorial.multiplicationIntroStep;
+  return (
+    typeof step === "string" &&
+    multiplicationTutorialSteps.includes(
+      step as (typeof multiplicationTutorialSteps)[number],
+    ) &&
+    typeof value.tutorial.multiplicationIntroCompleted === "boolean" &&
+    (value.tutorial.multiplicationIntroCompleted === (step === "COMPLETED"))
+  );
 }
 
 export function migrateSave(rawSave: unknown): GameState | null {
-  if (!isRecord(rawSave) || rawSave.version !== SAVE_VERSION) return null;
-  return isGameState(rawSave) ? rawSave : null;
+  if (!isRecord(rawSave)) return null;
+  if (rawSave.version === SAVE_VERSION) return isGameState(rawSave) ? rawSave : null;
+  if (rawSave.version !== 1 || !hasValidCoreState(rawSave)) return null;
+
+  const migrated = {
+    ...rawSave,
+    version: SAVE_VERSION,
+    tutorial: createInitialTutorialProgress(),
+  };
+  return isGameState(migrated) ? migrated : null;
 }

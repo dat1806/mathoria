@@ -61,6 +61,7 @@ export function DebugPage() {
           <div><dt>Save version</dt><dd>{state.version}</dd></div>
           <div><dt>Locale</dt><dd>{state.settings.locale}</dd></div>
           <div><dt>World stage</dt><dd>{state.world.stage}</dd></div>
+          <div><dt>Tutorial step</dt><dd>{state.tutorial.multiplicationIntroStep}</dd></div>
           <div><dt>Materials</dt><dd>{state.inventory.materials}</dd></div>
           <div><dt>Coins</dt><dd>{state.inventory.coins}</dd></div>
           <div><dt>Built buildings</dt><dd>{state.world.builtBuildings.length}</dd></div>

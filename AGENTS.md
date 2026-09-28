@@ -37,9 +37,15 @@ Before implementing or modifying a feature, read:
 1. `docs/GAME_DESIGN.md`
 2. `docs/LEARNING_SYSTEM.md`
 3. `docs/DESIGN_SYSTEM.md`
-4. `docs/MVP_SPEC.md`
-5. `docs/TECHNICAL_ARCHITECTURE.md`
-6. the relevant file under `docs/phases/`
+4. `docs/VISUAL_DESIGN.md`
+5. `docs/MVP_SPEC.md`
+6. `docs/TECHNICAL_ARCHITECTURE.md`
+7. `docs/SPEC_CONSISTENCY.md`
+8. the relevant file under `docs/phases/`
+
+For player-facing UI or visual gameplay work, also inspect:
+
+`docs/references/mathoria-visual-anchor.png`
 
 These documents are the source of truth for product and technical decisions.
 
@@ -450,40 +456,56 @@ Adding a future math operation should generally require new learning content rat
 
 # 15. Visual Direction
 
-Mathoria uses:
+The canonical Mathoria V1 visual direction is:
 
-```text
-Cozy Fantasy 2D
-```
+**Cozy Storybook Fantasy 2D**
 
-The visual experience should feel:
+Primary world camera:
 
-- warm;
-- playful;
-- safe;
-- magical;
-- friendly.
+**2D 3/4 top-down**
 
-Use:
+For player-facing visual implementation, follow:
 
-- rounded shapes;
-- large interaction targets;
-- minimal text;
-- expressive characters;
-- friendly monsters;
-- strong visual feedback;
-- gentle motion.
+- `docs/DESIGN_SYSTEM.md`
+- `docs/VISUAL_DESIGN.md`
+- `docs/references/mathoria-visual-anchor.png`
 
-Avoid:
+The visual anchor defines the visual language, not a pixel-perfect layout.
+
+Do not copy complete screens from the visual anchor as flattened gameplay.
+
+In particular, example multiple-choice learning panels in the visual anchor demonstrate visual treatment only.
+
+They do **not** define the default learning interaction.
+
+Learning interaction design must follow:
+
+`docs/LEARNING_SYSTEM.md`
+
+## Canonical V1 Visual Decisions
+
+- warm, natural, magical environments;
+- rounded storybook shapes;
+- 3/4 top-down world scenes;
+- child adventurer Hero with a magic staff;
+- orange/golden Fox Guide with a glowing tail tip;
+- cute, non-frightening Slimes;
+- organic cream/wood/nature-inspired UI;
+- large child-friendly interaction targets;
+- Vietnamese-first typography;
+- visual learning objects integrated into gameplay;
+- playful, non-violent battle presentation.
+
+## Avoid
 
 - SaaS/dashboard visual language;
+- worksheet-first learning screens;
 - dense menus;
 - tiny controls;
 - realistic violence;
 - dark or frightening fantasy;
-- excessive modal dialogs.
-
-See `docs/DESIGN_SYSTEM.md`.
+- excessive modal dialogs;
+- introducing unrelated visual styles between features.
 
 ---
 
@@ -568,19 +590,48 @@ Early phases may use:
 - temporary icons;
 - simple shapes.
 
-Workflow:
+The implementation workflow is:
 
-```text
-functional prototype
-      ↓
-validate gameplay
-      ↓
-finalize assets
-      ↓
-replace placeholders
-      ↓
-polish
-```
+**Functional prototype → Validate gameplay → Finalize assets → Replace placeholders → Polish**
+
+Concept art and visual reference sheets are **not automatically production-ready assets**.
+
+Do not implement a complete gameplay screen as one flattened image.
+
+Prefer separate assets for:
+
+- environment/background;
+- characters;
+- interactive objects;
+- UI frames;
+- icons;
+- visual effects.
+
+Player-facing text should normally remain real HTML/UI text rather than being baked into images.
+
+This is important for:
+
+- Vietnamese text rendering;
+- accessibility;
+- responsive layouts;
+- future localization;
+- dynamic game content.
+
+When final assets are unavailable, preserve the intended:
+
+- composition;
+- scale;
+- hierarchy;
+- interaction areas;
+- approximate visual style;
+
+using placeholders, then replace those placeholders with production assets later.
+
+The visual anchor at:
+
+`docs/references/mathoria-visual-anchor.png`
+
+is a **design reference**, not a flattened production screen or sprite sheet.
 
 ---
 

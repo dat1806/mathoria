@@ -43,6 +43,49 @@ describe("LocalStorageGameRepository", () => {
     expect(storage.getItem(GAME_SAVE_KEY)).toBeNull();
   });
 
+  it("migrates a Phase 01 save while preserving progress", async () => {
+    const storage = new MemoryStorage();
+    const current = createInitialGameState();
+    const { tutorial: _tutorial, ...phaseOneState } = current;
+    const phaseOneSave = {
+      ...phaseOneState,
+      version: 1,
+      inventory: { materials: 12, coins: 7 },
+      learning: {
+        masteryByFact: {
+          "MULTIPLICATION:2:2": {
+            factKey: "MULTIPLICATION:2:2",
+            operation: "MULTIPLICATION",
+            operands: [2, 2],
+            skills: {
+              RECOGNIZE: {
+                attempts: 1,
+                correct: 1,
+                consecutiveCorrect: 1,
+                consecutiveWrong: 0,
+                masteryScore: 10,
+                lastAttemptAt: "2026-09-28T00:00:00.000Z",
+              },
+            },
+          },
+        },
+      },
+    };
+    storage.setItem(GAME_SAVE_KEY, JSON.stringify(phaseOneSave));
+
+    const migrated = await new LocalStorageGameRepository(storage).load();
+
+    expect(migrated).toMatchObject({
+      version: 2,
+      inventory: { materials: 12, coins: 7 },
+      tutorial: {
+        multiplicationIntroStep: "ARRIVAL",
+        multiplicationIntroCompleted: false,
+      },
+    });
+    expect(migrated?.learning).toEqual(phaseOneSave.learning);
+  });
+
   it("recovers from an invalid root structure", async () => {
     const storage = new MemoryStorage();
     storage.setItem(GAME_SAVE_KEY, JSON.stringify({ version: 1, inventory: null }));

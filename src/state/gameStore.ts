@@ -7,10 +7,12 @@ import { applyReward, type Reward } from "../game/domain/rewards";
 import type { LearningAttempt } from "../learning/domain/mastery";
 import { updateSkillMastery } from "../learning/mastery/updateMastery";
 import type { GameRepository } from "../persistence/GameRepository";
+import { advanceMultiplicationTutorial } from "../tutorial/domain/tutorialProgress";
 
 export interface GameActions {
   grantReward(reward: Reward): void;
   recordLearningAttempt(attempt: LearningAttempt): void;
+  advanceTutorial(): void;
   resetGame(): Promise<void>;
 }
 
@@ -26,6 +28,7 @@ function persistentState(store: GameStore): GameState {
     inventory: store.inventory,
     adventures: store.adventures,
     settings: store.settings,
+    tutorial: store.tutorial,
   };
 }
 
@@ -68,6 +71,27 @@ export async function createGameStore(
               },
             },
           },
+        };
+      });
+      const stateToSave = persistentState(useStore.getState());
+      void enqueuePersistence(() => repository.save(stateToSave));
+    },
+    advanceTutorial: () => {
+      set((state) => {
+        const tutorial = advanceMultiplicationTutorial(state.tutorial);
+        const completedNow =
+          tutorial.multiplicationIntroCompleted &&
+          !state.tutorial.multiplicationIntroCompleted;
+        return {
+          tutorial,
+          world: completedNow
+            ? {
+                ...state.world,
+                unlockedLocations: state.world.unlockedLocations.includes("FOREST")
+                  ? state.world.unlockedLocations
+                  : [...state.world.unlockedLocations, "FOREST"],
+              }
+            : state.world,
         };
       });
       const stateToSave = persistentState(useStore.getState());

@@ -1,4 +1,8 @@
 import type { LearningState } from "../../learning/domain/mastery";
+import {
+  createInitialTutorialProgress,
+  type TutorialProgressState,
+} from "../../tutorial/domain/tutorialProgress";
 
 export type WorldStage =
   | "CAMP"
@@ -40,9 +44,10 @@ export interface GameState {
   inventory: InventoryState;
   adventures: AdventureProgressState;
   settings: GameSettings;
+  tutorial: TutorialProgressState;
 }
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 export function createInitialGameState(): GameState {
   return {
@@ -61,5 +66,6 @@ export function createInitialGameState(): GameState {
       completedAdventureIds: [],
     },
     settings: { locale: "vi" },
+    tutorial: createInitialTutorialProgress(),
   };
 }
