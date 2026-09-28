@@ -34,12 +34,20 @@ export async function createGameStore(
 ): Promise<BoundGameStore> {
   const loaded = await repository.load();
   const initialState = loaded ?? createInitialGameState();
+  let persistenceQueue = Promise.resolve();
+
+  const enqueuePersistence = (operation: () => Promise<void>): Promise<void> => {
+    const result = persistenceQueue.then(operation, operation);
+    persistenceQueue = result.catch(() => undefined);
+    return result;
+  };
 
   const useStore = create<GameStore>((set) => ({
     ...initialState,
     grantReward: (reward) => {
       set((state) => ({ inventory: applyReward(state.inventory, reward) }));
-      void repository.save(persistentState(useStore.getState()));
+      const stateToSave = persistentState(useStore.getState());
+      void enqueuePersistence(() => repository.save(stateToSave));
     },
     recordLearningAttempt: (attempt) => {
       set((state) => {
@@ -62,11 +70,16 @@ export async function createGameStore(
           },
         };
       });
-      void repository.save(persistentState(useStore.getState()));
+      const stateToSave = persistentState(useStore.getState());
+      void enqueuePersistence(() => repository.save(stateToSave));
     },
     resetGame: async () => {
-      set(createInitialGameState());
-      await repository.clear();
+      const resetState = createInitialGameState();
+      set(resetState);
+      await enqueuePersistence(async () => {
+        await repository.clear();
+        await repository.save(resetState);
+      });
     },
   }));
 
