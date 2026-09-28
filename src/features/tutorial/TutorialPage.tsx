@@ -1,6 +1,12 @@
-import { useState } from "react";
-import { guidedPractice } from "../../content/tutorials/multiplicationIntro";
+import { useRef, useState } from "react";
 import {
+  equalGroupsProblem,
+  guidedPractice,
+  repeatedAdditionProblem,
+  type TutorialChoice,
+} from "../../content/tutorials/multiplicationIntro";
+import {
+  evaluateExpressionSelection,
   evaluateProblem,
   selectHintLevel,
 } from "../../learning/application/evaluateProblem";
@@ -44,11 +50,25 @@ function SceneButton({ children, onClick }: { children: React.ReactNode; onClick
 }
 
 function EqualGroupsActivity({ onComplete }: { onComplete: () => void }) {
+  const recordAttempt = useGameStore((state) => state.recordLearningAttempt);
   const [baskets, setBaskets] = useState([0, 0, 0]);
+  const recorded = useRef(false);
   const complete = baskets.every((count) => count === 2);
   const fillBasket = (index: number) => {
     setBaskets((current) => current.map((count, basketIndex) =>
       basketIndex === index ? Math.min(2, count + 1) : count));
+  };
+  const finish = () => {
+    if (!recorded.current) {
+      recorded.current = true;
+      recordAttempt(evaluateProblem(
+        equalGroupsProblem,
+        6,
+        false,
+        new Date().toISOString(),
+      ).attempt);
+    }
+    onComplete();
   };
 
   return (
@@ -73,7 +93,7 @@ function EqualGroupsActivity({ onComplete }: { onComplete: () => void }) {
         <div className="success-block">
           <p>{t("tutorial.groupsComplete")}</p>
           <div className="equation">2 + 2 + 2</div>
-          <SceneButton onClick={onComplete}>{t("tutorial.seeAddition")}</SceneButton>
+          <SceneButton onClick={finish}>{t("tutorial.seeAddition")}</SceneButton>
         </div>
       ) : null}
     </section>
@@ -81,15 +101,26 @@ function EqualGroupsActivity({ onComplete }: { onComplete: () => void }) {
 }
 
 function RepeatedAddition({ onComplete }: { onComplete: () => void }) {
+  const recordAttempt = useGameStore((state) => state.recordLearningAttempt);
   const [message, setMessage] = useState<"idle" | "wrong" | "correct">("idle");
+  const answer = (value: number) => {
+    const evaluation = evaluateProblem(
+      repeatedAdditionProblem,
+      value,
+      message === "wrong",
+      new Date().toISOString(),
+    );
+    recordAttempt(evaluation.attempt);
+    setMessage(evaluation.correct ? "correct" : "wrong");
+  };
   return (
     <section className="activity-panel">
       <h2>{t("tutorial.additionTitle")}</h2>
       <p>{t("tutorial.additionPrompt")}</p>
       <Groups groups={3} each={3} object="🍄" />
       <div className="answer-row">
-        {[6, 9, 12].map((answer) => (
-          <button key={answer} onClick={() => setMessage(answer === 9 ? "correct" : "wrong")}>{answer}</button>
+        {[6, 9, 12].map((value) => (
+          <button key={value} disabled={message === "correct"} onClick={() => answer(value)}>{value}</button>
         ))}
       </div>
       {message === "wrong" ? <Dialogue>{t("tutorial.gentleRetry")}</Dialogue> : null}
@@ -111,13 +142,21 @@ function GuidedPractice({ onComplete }: { onComplete: () => void }) {
   const [correct, setCorrect] = useState(false);
   const item = guidedPractice[index];
 
-  const answer = (value: number) => {
-    const evaluation = evaluateProblem(
-      item.problem,
-      value,
-      wrongAttempts > 0,
-      new Date().toISOString(),
-    );
+  const answer = (choice: TutorialChoice) => {
+    const attemptedAt = new Date().toISOString();
+    const evaluation = choice.kind === "EXPRESSION"
+      ? evaluateExpressionSelection(
+          item.problem,
+          { operation: choice.operation, operands: choice.operands },
+          wrongAttempts > 0,
+          attemptedAt,
+        )
+      : evaluateProblem(
+          item.problem,
+          choice.value,
+          wrongAttempts > 0,
+          attemptedAt,
+        );
     recordAttempt(evaluation.attempt);
     if (evaluation.correct) setCorrect(true);
     else setWrongAttempts((count) => count + 1);
@@ -151,9 +190,9 @@ function GuidedPractice({ onComplete }: { onComplete: () => void }) {
           <button
             key={choice.label}
             disabled={correct}
-            onClick={() => answer(choice.value)}
+            onClick={() => answer(choice)}
             aria-label={t("tutorial.answerLabel", {
-              answer: choice.visualGroups
+              answer: choice.kind === "NUMBER" && choice.visualGroups
                 ? t("tutorial.groupCount", {
                     groups: choice.visualGroups[0],
                     each: choice.visualGroups[1],
@@ -161,7 +200,7 @@ function GuidedPractice({ onComplete }: { onComplete: () => void }) {
                 : choice.label,
             })}
           >
-            {choice.visualGroups ? (
+            {choice.kind === "NUMBER" && choice.visualGroups ? (
               <span className="mini-groups" aria-hidden="true">
                 {Array.from({ length: choice.visualGroups[0] }, (_, group) => (
                   <i key={group}>{emoji.repeat(choice.visualGroups?.[1] ?? 0)}</i>

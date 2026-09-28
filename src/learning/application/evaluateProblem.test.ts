@@ -1,12 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { guidedPractice } from "../../content/tutorials/multiplicationIntro";
-import { evaluateProblem, selectHintLevel } from "./evaluateProblem";
+import {
+  equalGroupsProblem,
+  guidedPractice,
+  repeatedAdditionProblem,
+} from "../../content/tutorials/multiplicationIntro";
+import { updateSkillMastery } from "../mastery/updateMastery";
+import {
+  evaluateExpressionSelection,
+  evaluateProblem,
+  selectHintLevel,
+} from "./evaluateProblem";
 
 describe("tutorial learning integration", () => {
-  it("records a correct recognized answer with the centralized fact key", () => {
-    const result = evaluateProblem(
+  it("recognizes the semantically matching expression", () => {
+    const result = evaluateExpressionSelection(
       guidedPractice[0].problem,
-      8,
+      { operation: "MULTIPLICATION", operands: [2, 4] },
       false,
       "2026-09-28T00:00:00.000Z",
     );
@@ -17,6 +26,65 @@ describe("tutorial learning integration", () => {
       correct: true,
       hintUsed: false,
     });
+  });
+
+  it("rejects a wrong expression even when it has the same numeric result", () => {
+    const result = evaluateExpressionSelection(
+      guidedPractice[0].problem,
+      { operation: "MULTIPLICATION", operands: [4, 2] },
+      false,
+      "2026-09-28T00:00:00.000Z",
+    );
+    expect(result).toMatchObject({
+      correct: false,
+      attempt: {
+        factKey: "MULTIPLICATION:2:4",
+        skill: "RECOGNIZE",
+        correct: false,
+      },
+    });
+  });
+
+  it("records successful Equal Groups construction learning", () => {
+    const result = evaluateProblem(
+      equalGroupsProblem,
+      6,
+      false,
+      "2026-09-28T00:00:00.000Z",
+    );
+    expect(result.attempt).toMatchObject({
+      problemId: "intro-equal-groups-3x2",
+      factKey: "MULTIPLICATION:3:2",
+      skill: "CONSTRUCT",
+      correct: true,
+    });
+  });
+
+  it("records successful Repeated Addition learning", () => {
+    const result = evaluateProblem(
+      repeatedAdditionProblem,
+      9,
+      false,
+      "2026-09-28T00:00:00.000Z",
+    );
+    expect(result.attempt).toMatchObject({
+      problemId: "intro-repeated-addition-3x3",
+      factKey: "MULTIPLICATION:3:3",
+      skill: "CALCULATE",
+      correct: true,
+    });
+  });
+
+  it("keeps guided-practice attempts compatible with mastery updates", () => {
+    const result = evaluateProblem(
+      guidedPractice[1].problem,
+      6,
+      false,
+      "2026-09-28T00:00:00.000Z",
+    );
+    const mastery = updateSkillMastery(undefined, result.attempt);
+    expect(result.attempt).toMatchObject({ skill: "CONSTRUCT", correct: true });
+    expect(mastery).toMatchObject({ attempts: 1, correct: 1 });
   });
 
   it("records wrong supported attempts through the same model", () => {

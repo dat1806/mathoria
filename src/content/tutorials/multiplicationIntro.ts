@@ -1,10 +1,24 @@
-import type { LearningSkill, MathProblem } from "../../learning/domain/math";
+import type {
+  LearningSkill,
+  MathOperation,
+  MathProblem,
+} from "../../learning/domain/math";
 
-export interface TutorialChoice {
+export interface NumericTutorialChoice {
+  kind: "NUMBER";
   value: number;
   label: string;
   visualGroups?: readonly [groups: number, each: number];
 }
+
+export interface ExpressionTutorialChoice {
+  kind: "EXPRESSION";
+  operation: MathOperation;
+  operands: readonly [number, number];
+  label: string;
+}
+
+export type TutorialChoice = NumericTutorialChoice | ExpressionTutorialChoice;
 
 export interface GuidedPracticeItem {
   problem: MathProblem;
@@ -39,9 +53,9 @@ export const guidedPractice: readonly GuidedPracticeItem[] = [
     promptKey: "tutorial.practiceRecognize",
     object: "sprout",
     choices: [
-      { value: 8, label: "2 × 4" },
-      { value: 16, label: "4 × 4" },
-      { value: 4, label: "2 × 2" },
+      { kind: "EXPRESSION", operation: "MULTIPLICATION", operands: [2, 4], label: "2 × 4" },
+      { kind: "EXPRESSION", operation: "MULTIPLICATION", operands: [4, 2], label: "4 × 2" },
+      { kind: "EXPRESSION", operation: "MULTIPLICATION", operands: [2, 2], label: "2 × 2" },
     ],
   },
   {
@@ -49,9 +63,9 @@ export const guidedPractice: readonly GuidedPracticeItem[] = [
     promptKey: "tutorial.practiceConstruct",
     object: "berry",
     choices: [
-      { value: 4, label: "2:2", visualGroups: [2, 2] },
-      { value: 6, label: "3:2", visualGroups: [3, 2] },
-      { value: 9, label: "3:3", visualGroups: [3, 3] },
+      { kind: "NUMBER", value: 4, label: "2:2", visualGroups: [2, 2] },
+      { kind: "NUMBER", value: 6, label: "3:2", visualGroups: [3, 2] },
+      { kind: "NUMBER", value: 9, label: "3:3", visualGroups: [3, 3] },
     ],
   },
   {
@@ -59,9 +73,25 @@ export const guidedPractice: readonly GuidedPracticeItem[] = [
     promptKey: "tutorial.practiceApply",
     object: "carrot",
     choices: [
-      { value: 6, label: "6" },
-      { value: 9, label: "9" },
-      { value: 12, label: "12" },
+      { kind: "NUMBER", value: 6, label: "6" },
+      { kind: "NUMBER", value: 9, label: "9" },
+      { kind: "NUMBER", value: 12, label: "12" },
     ],
   },
 ];
+
+export const equalGroupsProblem = problem(
+  "intro-equal-groups-3x2",
+  [3, 2],
+  6,
+  "CONSTRUCT",
+  "EQUAL_GROUPS",
+);
+
+export const repeatedAdditionProblem = problem(
+  "intro-repeated-addition-3x3",
+  [3, 3],
+  9,
+  "CALCULATE",
+  "EQUAL_GROUPS",
+);

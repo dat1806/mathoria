@@ -8,16 +8,20 @@ export interface ProblemEvaluation {
   attempt: LearningAttempt;
 }
 
-export function evaluateProblem(
+interface ExpressionSelection {
+  operation: MathProblem["operation"];
+  operands: readonly number[];
+}
+
+function createEvaluation(
   problem: MathProblem,
-  answer: number,
+  correct: boolean,
   hintUsed: boolean,
   attemptedAt: string,
 ): ProblemEvaluation {
   const factKey = createFactKey(problem);
   const skill = problem.skillIds[0];
   if (skill === undefined) throw new Error("A problem must assess a learning skill");
-  const correct = answer === problem.answer;
   return {
     correct,
     attempt: {
@@ -31,6 +35,35 @@ export function evaluateProblem(
       attemptedAt,
     },
   };
+}
+
+export function evaluateProblem(
+  problem: MathProblem,
+  answer: number,
+  hintUsed: boolean,
+  attemptedAt: string,
+): ProblemEvaluation {
+  return createEvaluation(
+    problem,
+    answer === problem.answer,
+    hintUsed,
+    attemptedAt,
+  );
+}
+
+export function evaluateExpressionSelection(
+  problem: MathProblem,
+  selection: ExpressionSelection,
+  hintUsed: boolean,
+  attemptedAt: string,
+): ProblemEvaluation {
+  const correct =
+    selection.operation === problem.operation &&
+    selection.operands.length === problem.operands.length &&
+    selection.operands.every(
+      (operand, index) => operand === problem.operands[index],
+    );
+  return createEvaluation(problem, correct, hintUsed, attemptedAt);
 }
 
 export function selectHintLevel(wrongAttempts: number): HintLevel {
