@@ -20,6 +20,7 @@ import {
 import { t, type TranslationKey } from "../../i18n";
 import { useGameStore } from "../../state/storeContext";
 import { commitAdventureChoice } from "./commitAdventureChoice";
+import { CampScene } from "./CampScene";
 
 function ResourceHud() {
   const materials = useGameStore((state) => state.inventory.materials);
@@ -225,11 +226,11 @@ export function FirstAdventurePage() {
   const complete = (encounter: FirstAdventureEncounterId) => () => completeEncounter(encounter);
 
   if (completed) {
-    return <main className="tutorial-world camp-return"><header className="world-header"><div><span>✦</span><strong>{t("game.title")}</strong></div><ResourceHud /></header><section className="camp-scene"><div className="tent" aria-hidden="true">⛺</div><div className="farm-plot-tease" aria-hidden="true">✨ 🪧 ✨</div><div className="scene-content"><section className="story-panel"><h1>{t("adventure.completeTitle")}</h1><p>{t("adventure.completeBody")}</p><div className="forest-ready">🌱 {t("adventure.farmNext")}</div></section></div></section></main>;
+    return <CampScene completed />;
   }
 
   if (currentAdventureId === null) {
-    return <main className="tutorial-world"><header className="world-header"><div><span>✦</span><strong>{t("game.title")}</strong></div><ResourceHud /></header><section className="camp-scene"><div className="tent" aria-hidden="true">⛺</div><div className="farm-plot-tease" aria-hidden="true">🪧</div><div className="scene-content"><section className="story-panel"><h1>{t("adventure.campDepartureTitle")}</h1><p>{t("adventure.campDepartureBody")}</p><Dialogue speaker={t("tutorial.foxName")}>{t("adventure.campDepartureFox")}</Dialogue><GameButton onClick={start}>{t("adventure.start")}</GameButton></section></div></section></main>;
+    return <CampScene completed={false} onStart={start} />;
   }
 
   switch (currentNodeId) {
