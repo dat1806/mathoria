@@ -14,11 +14,12 @@ import {
   type FirstAdventureEncounterId,
 } from "../../game/adventure/firstAdventure";
 import {
-  evaluateExpressionSelection,
   evaluateProblem,
+  type ProblemEvaluation,
 } from "../../learning/application/evaluateProblem";
 import { t, type TranslationKey } from "../../i18n";
 import { useGameStore } from "../../state/storeContext";
+import { commitAdventureChoice } from "./commitAdventureChoice";
 
 function ResourceHud() {
   const materials = useGameStore((state) => state.inventory.materials);
@@ -142,11 +143,7 @@ function MathChoiceEncounter({
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [correct, setCorrect] = useState(false);
   const answer = (choice: AdventureChoice) => {
-    const attemptedAt = new Date().toISOString();
-    const evaluation = choice.kind === "EXPRESSION"
-      ? evaluateExpressionSelection(problem, choice, wrongAttempts > 0, attemptedAt)
-      : evaluateProblem(problem, choice.value, wrongAttempts > 0, attemptedAt);
-    recordAttempt(evaluation.attempt);
+    const evaluation = commitAdventureChoice(problem, choice, wrongAttempts > 0, new Date().toISOString(), recordAttempt);
     if (evaluation.correct) setCorrect(true);
     else setWrongAttempts((value) => value + 1);
   };
@@ -181,10 +178,10 @@ function GlowingTree({ complete }: { complete: () => void }) {
   );
 }
 
-function SlimeEncounter({ round, complete, advanceRound }: { round: number; complete: () => void; advanceRound: () => void }) {
+function SlimeEncounter({ round, complete, completeRound }: { round: number; complete: () => void; completeRound: (evaluation: ProblemEvaluation) => void }) {
   const recordAttempt = useGameStore((state) => state.recordLearningAttempt);
   const [wrongAttempts, setWrongAttempts] = useState(0);
-  const [correct, setCorrect] = useState(false);
+  const [successfulEvaluation, setSuccessfulEvaluation] = useState<ProblemEvaluation | null>(null);
   if (round >= 3) {
     return <AdventureFrame slime><section className="story-panel forest-panel"><h1>{t("adventure.slimeTitle")}</h1><div className="slime-resolved">🟢 ↝ 😊</div><p>{t("adventure.slimeResolved")}</p><RewardLine materials={5} coins={2} /><GameButton onClick={complete}>{t("adventure.takeSlimeReward")}</GameButton></section></AdventureFrame>;
   }
@@ -192,12 +189,8 @@ function SlimeEncounter({ round, complete, advanceRound }: { round: number; comp
   const choices = slimeChoices[round];
   const prompts: TranslationKey[] = ["adventure.slimeRecognize", "adventure.slimeConstruct", "adventure.slimeCalculate"];
   const answer = (choice: AdventureChoice) => {
-    const attemptedAt = new Date().toISOString();
-    const evaluation = choice.kind === "EXPRESSION"
-      ? evaluateExpressionSelection(problem, choice, wrongAttempts > 0, attemptedAt)
-      : evaluateProblem(problem, choice.value, wrongAttempts > 0, attemptedAt);
-    recordAttempt(evaluation.attempt);
-    if (evaluation.correct) setCorrect(true);
+    const evaluation = commitAdventureChoice(problem, choice, wrongAttempts > 0, new Date().toISOString(), recordAttempt);
+    if (evaluation.correct) setSuccessfulEvaluation(evaluation);
     else setWrongAttempts((value) => value + 1);
   };
   const visual = round === 0
@@ -214,8 +207,8 @@ function SlimeEncounter({ round, complete, advanceRound }: { round: number; comp
         <p>{t(prompts[round])}</p>
         {visual}
         {wrongAttempts > 0 ? <Dialogue speaker={t("tutorial.foxName")} hint>{t("adventure.wrongHint")}</Dialogue> : null}
-        <div className="answer-row">{choices.map((choice) => <button key={choice.label} disabled={correct} onClick={() => answer(choice)}>{choice.label}</button>)}</div>
-        {correct ? <div className="success-block magic-feedback"><p>{t("adventure.correctMagic")}</p><span aria-hidden="true">🪄 ✨ ✨</span><GameButton onClick={advanceRound}>{t("adventure.castMagic")}</GameButton></div> : null}
+        <div className="answer-row">{choices.map((choice) => <button key={choice.label} disabled={successfulEvaluation !== null} onClick={() => answer(choice)}>{choice.label}</button>)}</div>
+        {successfulEvaluation ? <div className="success-block magic-feedback"><p>{t("adventure.correctMagic")}</p><span aria-hidden="true">🪄 ✨ ✨</span><GameButton onClick={() => completeRound(successfulEvaluation)}>{t("adventure.castMagic")}</GameButton></div> : null}
       </section>
     </AdventureFrame>
   );
@@ -228,7 +221,7 @@ export function FirstAdventurePage() {
   const battleRound = useGameStore((state) => state.adventures.battleRound);
   const start = useGameStore((state) => state.startFirstAdventure);
   const completeEncounter = useGameStore((state) => state.completeAdventureEncounter);
-  const advanceBattleRound = useGameStore((state) => state.advanceBattleRound);
+  const completeBattleRound = useGameStore((state) => state.completeBattleRound);
   const complete = (encounter: FirstAdventureEncounterId) => () => completeEncounter(encounter);
 
   if (completed) {
@@ -245,7 +238,7 @@ export function FirstAdventurePage() {
     case "MUSHROOM_PATH": return <MathChoiceEncounter titleKey="adventure.mushroomTitle" promptKey="adventure.mushroomPrompt" problem={mushroomPathProblem} choices={mushroomChoices} visual={<Groups groups={2} each={4} object="🍄" />} reward={{ materials: 2 }} complete={complete("MUSHROOM_PATH")} />;
     case "MAM_CLEARING": return <MathChoiceEncounter titleKey="adventure.mamTitle" promptKey="adventure.mamPrompt" problem={mamClearingProblem} choices={mamChoices} visual={<Groups groups={3} each={2} object="🥕" />} reward={{ materials: 3, coins: 1 }} complete={complete("MAM_CLEARING")} mam />;
     case "GLOWING_TREE": return <GlowingTree complete={complete("GLOWING_TREE")} />;
-    case "SLIME_CLEARING": return <SlimeEncounter key={battleRound} round={battleRound} complete={complete("SLIME_CLEARING")} advanceRound={advanceBattleRound} />;
+    case "SLIME_CLEARING": return <SlimeEncounter key={battleRound} round={battleRound} complete={complete("SLIME_CLEARING")} completeRound={completeBattleRound} />;
     case "RETURN_TO_CAMP": return <AdventureFrame><section className="story-panel forest-panel"><h1>{t("adventure.returnTitle")}</h1><p>{t("adventure.returnBody")}</p><GameButton onClick={complete("RETURN_TO_CAMP")}>{t("adventure.returnCamp")}</GameButton></section></AdventureFrame>;
     default: return null;
   }

@@ -6,6 +6,8 @@ import {
 } from "./firstAdventure";
 import type { InventoryState } from "../domain/gameState";
 import { applyReward } from "../domain/rewards";
+import { slimeProblems } from "../../content/adventures/firstMaterials";
+import type { ProblemEvaluation } from "../../learning/application/evaluateProblem";
 
 export interface AdventureProgressState {
   currentAdventureId: string | null;
@@ -31,6 +33,23 @@ export interface EncounterCompletion {
   completed: boolean;
 }
 
+export function completeCurrentBattleRound(
+  progress: AdventureProgressState,
+  evaluation: ProblemEvaluation,
+): AdventureProgressState {
+  const currentProblem = slimeProblems[progress.battleRound];
+  if (
+    progress.currentAdventureId !== FIRST_ADVENTURE_ID ||
+    progress.currentNodeId !== "SLIME_CLEARING" ||
+    !currentProblem ||
+    !evaluation.correct ||
+    !evaluation.attempt.correct ||
+    evaluation.attempt.problemId !== currentProblem.id
+  ) return progress;
+
+  return { ...progress, battleRound: progress.battleRound + 1 };
+}
+
 export function completeFirstAdventureEncounter(
   progress: AdventureProgressState,
   inventory: InventoryState,
@@ -39,7 +58,8 @@ export function completeFirstAdventureEncounter(
   if (
     progress.currentAdventureId !== FIRST_ADVENTURE_ID ||
     progress.currentNodeId !== encounterId ||
-    progress.completedEncounterIds.includes(encounterId)
+    progress.completedEncounterIds.includes(encounterId) ||
+    (encounterId === "SLIME_CLEARING" && progress.battleRound !== slimeProblems.length)
   ) {
     return { progress, inventory, completed: false };
   }

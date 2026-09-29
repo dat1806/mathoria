@@ -5,6 +5,8 @@ import {
 } from "../game/domain/gameState";
 import type { GameRepository } from "../persistence/GameRepository";
 import { firstAdventureEncounters } from "../game/adventure/firstAdventure";
+import { slimeProblems } from "../content/adventures/firstMaterials";
+import { evaluateProblem } from "../learning/application/evaluateProblem";
 import { createGameStore } from "./gameStore";
 
 class MemoryRepository implements GameRepository {
@@ -207,15 +209,15 @@ describe("game store", () => {
     for (const encounter of firstAdventureEncounters.slice(0, 5)) {
       store.getState().completeAdventureEncounter(encounter);
     }
-    store.getState().advanceBattleRound();
+    store.getState().completeBattleRound(evaluateProblem(slimeProblems[0], 6, false, "2026-09-29T00:00:00.000Z"));
     await flushPromises();
 
     const resumedBattle = await createGameStore(repository);
     expect(resumedBattle.getState().adventures.currentNodeId).toBe("SLIME_CLEARING");
     expect(resumedBattle.getState().adventures.battleRound).toBe(1);
 
-    resumedBattle.getState().advanceBattleRound();
-    resumedBattle.getState().advanceBattleRound();
+    resumedBattle.getState().completeBattleRound(evaluateProblem(slimeProblems[1], 9, false, "2026-09-29T00:00:00.000Z"));
+    resumedBattle.getState().completeBattleRound(evaluateProblem(slimeProblems[2], 8, false, "2026-09-29T00:00:00.000Z"));
     resumedBattle.getState().completeAdventureEncounter("SLIME_CLEARING");
     resumedBattle.getState().completeAdventureEncounter("RETURN_TO_CAMP");
     await flushPromises();

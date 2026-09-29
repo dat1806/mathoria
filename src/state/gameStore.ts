@@ -1,6 +1,7 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import {
   completeFirstAdventureEncounter,
+  completeCurrentBattleRound,
 } from "../game/adventure/adventureProgress";
 import {
   FIRST_ADVENTURE_ID,
@@ -12,6 +13,7 @@ import {
 } from "../game/domain/gameState";
 import { applyReward, type Reward } from "../game/domain/rewards";
 import type { LearningAttempt } from "../learning/domain/mastery";
+import type { ProblemEvaluation } from "../learning/application/evaluateProblem";
 import { updateSkillMastery } from "../learning/mastery/updateMastery";
 import type { GameRepository } from "../persistence/GameRepository";
 import { advanceMultiplicationTutorial } from "../tutorial/domain/tutorialProgress";
@@ -22,7 +24,7 @@ export interface GameActions {
   advanceTutorial(): void;
   startFirstAdventure(): void;
   completeAdventureEncounter(encounterId: FirstAdventureEncounterId): void;
-  advanceBattleRound(): void;
+  completeBattleRound(evaluation: ProblemEvaluation): void;
   resetGame(): Promise<void>;
 }
 
@@ -150,23 +152,14 @@ export async function createGameStore(
         void enqueuePersistence(() => repository.save(stateToSave));
       }
     },
-    advanceBattleRound: () => {
-      let advanced = false;
+    completeBattleRound: (evaluation) => {
+      let completed = false;
       set((state) => {
-        if (
-          state.adventures.currentAdventureId !== FIRST_ADVENTURE_ID ||
-          state.adventures.currentNodeId !== "SLIME_CLEARING" ||
-          state.adventures.battleRound >= 3
-        ) return state;
-        advanced = true;
-        return {
-          adventures: {
-            ...state.adventures,
-            battleRound: state.adventures.battleRound + 1,
-          },
-        };
+        const adventures = completeCurrentBattleRound(state.adventures, evaluation);
+        completed = adventures !== state.adventures;
+        return completed ? { adventures } : state;
       });
-      if (advanced) {
+      if (completed) {
         const stateToSave = persistentState(useStore.getState());
         void enqueuePersistence(() => repository.save(stateToSave));
       }
