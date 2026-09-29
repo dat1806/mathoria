@@ -1,5 +1,9 @@
 import type { LearningState } from "../../learning/domain/mastery";
 import {
+  createInitialAdventureProgress,
+  type AdventureProgressState,
+} from "../adventure/adventureProgress";
+import {
   createInitialTutorialProgress,
   type TutorialProgressState,
 } from "../../tutorial/domain/tutorialProgress";
@@ -22,12 +26,6 @@ export interface WorldState {
   builtBuildings: string[];
 }
 
-export interface AdventureProgressState {
-  currentAdventureId: string | null;
-  currentNodeId: string | null;
-  completedAdventureIds: string[];
-}
-
 export interface PlayerState {
   name?: string;
 }
@@ -47,7 +45,7 @@ export interface GameState {
   tutorial: TutorialProgressState;
 }
 
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 export function createInitialGameState(): GameState {
   return {
@@ -60,11 +58,7 @@ export function createInitialGameState(): GameState {
     },
     learning: { masteryByFact: {} },
     inventory: { materials: 0, coins: 0 },
-    adventures: {
-      currentAdventureId: null,
-      currentNodeId: null,
-      completedAdventureIds: [],
-    },
+    adventures: createInitialAdventureProgress(),
     settings: { locale: "vi" },
     tutorial: createInitialTutorialProgress(),
   };

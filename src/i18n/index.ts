@@ -1,12 +1,14 @@
 import common from "./locales/vi/common.json";
 import game from "./locales/vi/game.json";
 import tutorial from "./locales/vi/tutorial.json";
+import adventure from "./locales/vi/adventure.json";
 
-const messages = { common, game, tutorial } as const;
+const messages = { common, game, tutorial, adventure } as const;
 export type TranslationKey =
   | `common.${keyof typeof common}`
   | `game.${keyof typeof game}`
-  | `tutorial.${keyof typeof tutorial}`;
+  | `tutorial.${keyof typeof tutorial}`
+  | `adventure.${keyof typeof adventure}`;
 
 export function t(
   key: TranslationKey,

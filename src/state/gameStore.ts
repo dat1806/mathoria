@@ -1,5 +1,12 @@
 import { create, type StoreApi, type UseBoundStore } from "zustand";
 import {
+  completeFirstAdventureEncounter,
+} from "../game/adventure/adventureProgress";
+import {
+  FIRST_ADVENTURE_ID,
+  type FirstAdventureEncounterId,
+} from "../game/adventure/firstAdventure";
+import {
   createInitialGameState,
   type GameState,
 } from "../game/domain/gameState";
@@ -13,6 +20,9 @@ export interface GameActions {
   grantReward(reward: Reward): void;
   recordLearningAttempt(attempt: LearningAttempt): void;
   advanceTutorial(): void;
+  startFirstAdventure(): void;
+  completeAdventureEncounter(encounterId: FirstAdventureEncounterId): void;
+  advanceBattleRound(): void;
   resetGame(): Promise<void>;
 }
 
@@ -96,6 +106,70 @@ export async function createGameStore(
       });
       const stateToSave = persistentState(useStore.getState());
       void enqueuePersistence(() => repository.save(stateToSave));
+    },
+    startFirstAdventure: () => {
+      let started = false;
+      set((state) => {
+        if (
+          !state.tutorial.multiplicationIntroCompleted ||
+          !state.world.unlockedLocations.includes("FOREST") ||
+          state.adventures.currentAdventureId !== null ||
+          state.adventures.completedAdventureIds.includes(FIRST_ADVENTURE_ID)
+        ) return state;
+        started = true;
+        return {
+          adventures: {
+            ...state.adventures,
+            currentAdventureId: FIRST_ADVENTURE_ID,
+            currentNodeId: "FOREST_ENTRANCE",
+            completedEncounterIds: [],
+            battleRound: 0,
+          },
+        };
+      });
+      if (started) {
+        const stateToSave = persistentState(useStore.getState());
+        void enqueuePersistence(() => repository.save(stateToSave));
+      }
+    },
+    completeAdventureEncounter: (encounterId) => {
+      let completed = false;
+      set((state) => {
+        const result = completeFirstAdventureEncounter(
+          state.adventures,
+          state.inventory,
+          encounterId,
+        );
+        completed = result.completed;
+        return result.completed
+          ? { adventures: result.progress, inventory: result.inventory }
+          : state;
+      });
+      if (completed) {
+        const stateToSave = persistentState(useStore.getState());
+        void enqueuePersistence(() => repository.save(stateToSave));
+      }
+    },
+    advanceBattleRound: () => {
+      let advanced = false;
+      set((state) => {
+        if (
+          state.adventures.currentAdventureId !== FIRST_ADVENTURE_ID ||
+          state.adventures.currentNodeId !== "SLIME_CLEARING" ||
+          state.adventures.battleRound >= 3
+        ) return state;
+        advanced = true;
+        return {
+          adventures: {
+            ...state.adventures,
+            battleRound: state.adventures.battleRound + 1,
+          },
+        };
+      });
+      if (advanced) {
+        const stateToSave = persistentState(useStore.getState());
+        void enqueuePersistence(() => repository.save(stateToSave));
+      }
     },
     resetGame: async () => {
       const resetState = createInitialGameState();

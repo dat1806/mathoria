@@ -76,7 +76,7 @@ describe("LocalStorageGameRepository", () => {
     const migrated = await new LocalStorageGameRepository(storage).load();
 
     expect(migrated).toMatchObject({
-      version: 2,
+      version: 3,
       inventory: { materials: 12, coins: 7 },
       tutorial: {
         multiplicationIntroStep: "ARRIVAL",
@@ -84,6 +84,38 @@ describe("LocalStorageGameRepository", () => {
       },
     });
     expect(migrated?.learning).toEqual(phaseOneSave.learning);
+  });
+
+  it("migrates a Phase 02 save without losing tutorial or mastery progress", async () => {
+    const storage = new MemoryStorage();
+    const current = createInitialGameState();
+    const phaseTwoSave = {
+      ...current,
+      version: 2,
+      inventory: { materials: 3, coins: 2 },
+      tutorial: {
+        multiplicationIntroStep: "COMPLETED",
+        multiplicationIntroCompleted: true,
+      },
+      adventures: {
+        currentAdventureId: null,
+        currentNodeId: null,
+        completedAdventureIds: [],
+      },
+    };
+    storage.setItem(GAME_SAVE_KEY, JSON.stringify(phaseTwoSave));
+
+    const migrated = await new LocalStorageGameRepository(storage).load();
+
+    expect(migrated).toMatchObject({
+      version: 3,
+      inventory: { materials: 3, coins: 2 },
+      tutorial: phaseTwoSave.tutorial,
+      adventures: {
+        completedEncounterIds: [],
+        battleRound: 0,
+      },
+    });
   });
 
   it("recovers from an invalid root structure", async () => {

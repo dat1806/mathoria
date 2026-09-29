@@ -1,4 +1,7 @@
 import {
+  createInitialAdventureProgress,
+} from "../game/adventure/adventureProgress";
+import {
   SAVE_VERSION,
   type GameState,
   type WorldStage,
@@ -96,29 +99,48 @@ export function isGameState(value: unknown): value is GameState {
     !isRecord(value) ||
     value.version !== SAVE_VERSION ||
     !hasValidCoreState(value) ||
-    !isRecord(value.tutorial)
+    !isValidTutorial(value.tutorial) ||
+    !isRecord(value.adventures) ||
+    !isStringArray(value.adventures.completedEncounterIds) ||
+    !isNonNegativeNumber(value.adventures.battleRound)
   ) return false;
 
-  const step = value.tutorial.multiplicationIntroStep;
+  return true;
+}
+
+function isValidTutorial(value: unknown): boolean {
+  if (!isRecord(value)) return false;
+  const step = value.multiplicationIntroStep;
   return (
     typeof step === "string" &&
     multiplicationTutorialSteps.includes(
       step as (typeof multiplicationTutorialSteps)[number],
     ) &&
-    typeof value.tutorial.multiplicationIntroCompleted === "boolean" &&
-    (value.tutorial.multiplicationIntroCompleted === (step === "COMPLETED"))
+    typeof value.multiplicationIntroCompleted === "boolean" &&
+    (value.multiplicationIntroCompleted === (step === "COMPLETED"))
   );
 }
 
 export function migrateSave(rawSave: unknown): GameState | null {
   if (!isRecord(rawSave)) return null;
   if (rawSave.version === SAVE_VERSION) return isGameState(rawSave) ? rawSave : null;
-  if (rawSave.version !== 1 || !hasValidCoreState(rawSave)) return null;
+  if (
+    (rawSave.version !== 1 && rawSave.version !== 2) ||
+    !hasValidCoreState(rawSave) ||
+    (rawSave.version === 2 && !isValidTutorial(rawSave.tutorial))
+  ) return null;
 
   const migrated = {
     ...rawSave,
     version: SAVE_VERSION,
-    tutorial: createInitialTutorialProgress(),
+    tutorial: rawSave.version === 1
+      ? createInitialTutorialProgress()
+      : rawSave.tutorial,
+    adventures: {
+      ...(rawSave.adventures as Record<string, unknown>),
+      completedEncounterIds: createInitialAdventureProgress().completedEncounterIds,
+      battleRound: createInitialAdventureProgress().battleRound,
+    },
   };
   return isGameState(migrated) ? migrated : null;
 }

@@ -4,6 +4,7 @@ import {
   type GameState,
 } from "../game/domain/gameState";
 import type { GameRepository } from "../persistence/GameRepository";
+import { firstAdventureEncounters } from "../game/adventure/firstAdventure";
 import { createGameStore } from "./gameStore";
 
 class MemoryRepository implements GameRepository {
@@ -138,5 +139,97 @@ describe("game store", () => {
     const resumed = await createGameStore(repository);
     expect(resumed.getState().tutorial.multiplicationIntroCompleted).toBe(true);
     expect(resumed.getState().tutorial.multiplicationIntroStep).toBe("COMPLETED");
+  });
+
+  it("persists and resumes first-adventure checkpoints", async () => {
+    const repository = new MemoryRepository();
+    repository.saved = createInitialGameState();
+    repository.saved.tutorial = {
+      multiplicationIntroStep: "COMPLETED",
+      multiplicationIntroCompleted: true,
+    };
+    repository.saved.world.unlockedLocations = ["FOREST"];
+    const store = await createGameStore(repository);
+
+    store.getState().startFirstAdventure();
+    store.getState().completeAdventureEncounter("FOREST_ENTRANCE");
+    store.getState().completeAdventureEncounter("BERRY_GROVE");
+    await flushPromises();
+
+    const resumed = await createGameStore(repository);
+    expect(resumed.getState().adventures.currentNodeId).toBe("MUSHROOM_PATH");
+    expect(resumed.getState().inventory).toEqual({ materials: 2, coins: 0 });
+  });
+
+  it("starts the first adventure only after the tutorial unlocks Forest", async () => {
+    const repository = new MemoryRepository();
+    const store = await createGameStore(repository);
+    store.getState().startFirstAdventure();
+    expect(store.getState().adventures.currentAdventureId).toBeNull();
+
+    for (let index = 0; index < 7; index += 1) store.getState().advanceTutorial();
+    store.getState().startFirstAdventure();
+    expect(store.getState().adventures).toMatchObject({
+      currentAdventureId: "FIRST_MATERIALS",
+      currentNodeId: "FOREST_ENTRANCE",
+    });
+  });
+
+  it("keeps encounter rewards idempotent across repeated actions", async () => {
+    const repository = new MemoryRepository();
+    repository.saved = createInitialGameState();
+    repository.saved.tutorial = {
+      multiplicationIntroStep: "COMPLETED",
+      multiplicationIntroCompleted: true,
+    };
+    repository.saved.world.unlockedLocations = ["FOREST"];
+    const store = await createGameStore(repository);
+    store.getState().startFirstAdventure();
+    store.getState().completeAdventureEncounter("FOREST_ENTRANCE");
+    store.getState().completeAdventureEncounter("BERRY_GROVE");
+    store.getState().completeAdventureEncounter("BERRY_GROVE");
+    await flushPromises();
+
+    expect(store.getState().inventory.materials).toBe(2);
+    expect(repository.saved?.inventory.materials).toBe(2);
+  });
+
+  it("persists battle rounds and the complete adventure reward total", async () => {
+    const repository = new MemoryRepository();
+    repository.saved = createInitialGameState();
+    repository.saved.tutorial = {
+      multiplicationIntroStep: "COMPLETED",
+      multiplicationIntroCompleted: true,
+    };
+    repository.saved.world.unlockedLocations = ["FOREST"];
+    const store = await createGameStore(repository);
+    store.getState().startFirstAdventure();
+    for (const encounter of firstAdventureEncounters.slice(0, 5)) {
+      store.getState().completeAdventureEncounter(encounter);
+    }
+    store.getState().advanceBattleRound();
+    await flushPromises();
+
+    const resumedBattle = await createGameStore(repository);
+    expect(resumedBattle.getState().adventures.currentNodeId).toBe("SLIME_CLEARING");
+    expect(resumedBattle.getState().adventures.battleRound).toBe(1);
+
+    resumedBattle.getState().advanceBattleRound();
+    resumedBattle.getState().advanceBattleRound();
+    resumedBattle.getState().completeAdventureEncounter("SLIME_CLEARING");
+    resumedBattle.getState().completeAdventureEncounter("RETURN_TO_CAMP");
+    await flushPromises();
+
+    expect(resumedBattle.getState().inventory).toEqual({ materials: 12, coins: 4 });
+    expect(resumedBattle.getState().adventures.completedAdventureIds).toEqual([
+      "FIRST_MATERIALS",
+    ]);
+    expect(repository.saved?.inventory).toEqual({ materials: 12, coins: 4 });
+
+    const resumedComplete = await createGameStore(repository);
+    expect(resumedComplete.getState().adventures.currentAdventureId).toBeNull();
+    expect(resumedComplete.getState().adventures.completedAdventureIds).toContain(
+      "FIRST_MATERIALS",
+    );
   });
 });

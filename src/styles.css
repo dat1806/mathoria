@@ -185,3 +185,66 @@ pre { overflow: auto; padding: 18px; border-radius: 14px; background: #283329; c
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+.adventure-world {
+  min-height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(#8fcdb9 0 20%, #5e9c60 20% 54%, #3f7548 54% 100%);
+}
+
+.adventure-world::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 68%, #edbe58 0 2px, transparent 3px),
+    radial-gradient(circle at 87% 45%, #9ceacb 0 3px, transparent 4px),
+    radial-gradient(ellipse at 5% 100%, #274f35 0 22%, transparent 22.5%),
+    radial-gradient(ellipse at 96% 95%, #274f35 0 25%, transparent 25.5%);
+}
+
+.resource-hud { display: flex; gap: 10px; }
+.resource-hud span { min-width: 86px; padding: 7px 13px; border: 2px solid #d99a50; border-radius: 14px; color: #56361f; background: #fff2ce; text-align: center; box-shadow: inset 0 2px #fff9e9; }
+.forest-canopy { position: absolute; z-index: 1; top: 8%; left: -2%; right: -2%; overflow: hidden; white-space: nowrap; font-size: clamp(5rem, 11vw, 10rem); letter-spacing: -.35em; filter: drop-shadow(0 14px 5px rgb(20 55 31 / 30%)); }
+.forest-trail { position: absolute; top: 28%; bottom: -10%; left: 37%; width: 32%; border-radius: 48% 52% 0 0; transform: perspective(500px) rotateX(6deg); background: linear-gradient(90deg, #b8864d, #dfbc76 45%, #bc8b50); box-shadow: inset 12px 0 rgb(102 76 39 / 14%), inset -12px 0 rgb(102 76 39 / 14%); }
+.adventure-content { position: relative; z-index: 4; width: min(740px, 94vw); margin: clamp(70px, 12vh, 120px) auto 60px; }
+.forest-panel { max-height: calc(100vh - 155px); overflow-y: auto; scrollbar-width: thin; }
+.adventure-characters { position: absolute; z-index: 3; left: 5%; bottom: 5%; display: flex; align-items: flex-end; gap: 12px; filter: drop-shadow(0 9px 4px rgb(20 43 26 / 35%)); }
+.adventure-characters > span { position: relative; display: inline-block; }
+.adventure-hero { font-size: clamp(4rem, 8vw, 7rem); }
+.adventure-fox { font-size: clamp(3.5rem, 7vw, 6rem); }
+.mam-character { font-size: clamp(3.2rem, 6vw, 5rem); }
+.adventure-hero i, .adventure-fox i, .mam-character i { position: absolute; font-style: normal; }
+.adventure-hero i { right: -5px; top: -10px; color: #7de9ff; text-shadow: 0 0 12px #2bc9ef; }
+.adventure-fox i { right: 0; bottom: 4px; color: #fff1a3; opacity: .45; }
+.adventure-fox.is-hinting i { opacity: 1; animation: tail-magic 1.2s ease-in-out infinite alternate; }
+.mam-character i { right: -4px; top: 0; font-size: 1.5rem; }
+.slime-character { width: clamp(80px, 9vw, 125px); height: clamp(62px, 7vw, 95px); border-radius: 55% 55% 38% 38%; color: #8ed759; background: #8ed759; box-shadow: inset 0 8px #b9ee78, 0 9px 0 #3f8b48; }
+.slime-character::before, .slime-character::after { content: "•"; position: absolute; top: 20%; color: #27462d; font-size: 2rem; }
+.slime-character::before { left: 28%; }.slime-character::after { right: 28%; }
+.slime-character i { position: absolute; left: 44%; bottom: 16%; color: #27462d; font-style: normal; }
+.berry-bushes { display: flex; justify-content: center; flex-wrap: wrap; gap: 18px; margin: 24px 0; }
+.berry-bush { position: relative; min-width: 140px; min-height: 112px; border: 3px solid #376a38; border-radius: 48% 52% 38% 42%; color: #315d31; background: #75ad55; font-size: 4rem; box-shadow: inset 0 7px #a7d775, 0 6px #315f35; }
+.berry-bush span { position: absolute; inset: 22% 0 auto; font-size: 1.6rem; }
+.berry-bush.collected { filter: saturate(.65); opacity: .75; }
+.reward-line { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; margin: 14px 0 20px; }
+.reward-line span { padding: 9px 15px; border: 2px solid #c5863c; border-radius: 14px; color: #65401f; background: #ffe6a8; }
+.hint-dialogue { box-shadow: 0 0 24px #fff2a2; }
+.glowing-tree { position: relative; min-width: 190px; min-height: 180px; border: 0; color: inherit; background: transparent; font-size: 9rem; filter: drop-shadow(0 0 20px #c9f383); }
+.glowing-tree i { position: absolute; right: 20%; top: 12%; color: #fff4a4; font-style: normal; animation: tail-magic 1s ease-in-out infinite alternate; }
+.battle-panel { box-shadow: inset 0 0 0 3px #f8c978, 0 0 48px rgb(108 222 162 / 45%); }
+.magic-feedback > span { display: block; margin: 10px; color: #3cb4d4; font-size: 2.2rem; animation: equation-reveal .5s ease-out both; }
+.slime-resolved { margin: 20px; font-size: clamp(3rem, 9vw, 6rem); }
+.farm-plot-tease { position: absolute; right: 8%; bottom: 8%; display: grid; width: min(32vw, 370px); height: min(26vw, 250px); place-items: center; border: 5px dashed #8f713a; border-radius: 48%; color: #fff0a6; background: #9b7848; font-size: clamp(2rem, 5vw, 4rem); box-shadow: 0 0 28px rgb(255 230 124 / 45%); }
+.camp-return .farm-plot-tease { animation: tail-magic 1.8s ease-in-out infinite alternate; }
+
+@media (max-width: 700px) {
+  .resource-hud span { min-width: auto; padding: 6px 9px; }
+  .adventure-content { margin-top: 55px; }
+  .adventure-characters { bottom: 1%; transform: scale(.72); transform-origin: bottom left; }
+  .forest-panel { max-height: calc(100vh - 125px); }
+  .berry-bush { min-width: 92px; min-height: 92px; font-size: 3rem; }
+  .farm-plot-tease { opacity: .6; }
+}
